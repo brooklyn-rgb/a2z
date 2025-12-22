@@ -1,15 +1,13 @@
+// app/cart/checkout/page.tsx
 'use client';
 
-import ItemContainer from '../ItemContainer';
-import ShippingInfo from './ShippingInfo';
+import CheckoutPage from '@/app/cart/Checkout';
+import SellerLayout from '@/app/cart/SellerLayout';
 
-const Page = () => {
+export default function CheckoutPageWrapper() {
   return (
-    <div className="w-full flex flex-col lg:flex-row items-start justify-between relative">
-      <ItemContainer />
-      <ShippingInfo />
-    </div>
+    <SellerLayout>
+      <CheckoutPage />
+    </SellerLayout>
   );
-};
-
-export default Page;
+}

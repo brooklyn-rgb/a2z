@@ -1,12 +1,12 @@
 'use client';
 import Button from '@/components/common/Button';
 import { NextPage } from 'next';
+import Head from 'next/head';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Login from './Login';
 import SignUp from './SignUp';
 import { Role, RoleType } from './utils';
-import Head from 'next/head';
 
 //------------------------------------------------------------------
 
@@ -34,7 +34,7 @@ const Page: NextPage = () => {
   const forNewUser = (
     <>
       <Head>
-        <title>Auth Page - DeepBazar</title>
+        <title>Auth Page - A2z AutoBody Parts</title>
       </Head>
       <div className="w-full max-w-[320px] flex items-center space-x-2 mt-[20px]">
         <Button

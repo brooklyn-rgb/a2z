@@ -8,6 +8,8 @@ export interface CartDataTypes {
   discountPrice: number;
   discountPercent: number;
   productId: string;
+  brand?: string; // Optional
+  category?: string; // Optional
 }
 
 export interface CartData extends CartDataTypes {

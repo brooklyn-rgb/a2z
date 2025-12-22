@@ -1,15 +1,17 @@
+// app/cart/page.tsx
 'use client';
 
-import ItemContainer from './ItemContainer';
-import Checkout from './Checkout';
+import Checkout from '@/app/cart/checkout/page';
+import ItemContainer from '@/app/cart/ItemContainer';
+import SellerLayout from '@/app/cart/SellerLayout';
 
-const CartPage = () => {
+export default function CartPage() {
   return (
-    <div className="w-full flex flex-col lg:flex-row items-start justify-between relative">
-      <ItemContainer />
-      <Checkout />
-    </div>
+    <SellerLayout>
+      <div className="w-full flex flex-col lg:flex-row items-start justify-between gap-6">
+        <ItemContainer />
+        <Checkout />
+      </div>
+    </SellerLayout>
   );
-};
-
-export default CartPage;
+}

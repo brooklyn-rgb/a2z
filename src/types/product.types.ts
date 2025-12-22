@@ -10,14 +10,15 @@ export interface ProductImage {
   defaultImg: string;
   cardImg: string;
   displayImg: string;
-  commentImg: string;
-  smallImg: string;
+  commentImg?: string; // Make optional with ?
+  smallImg?: string; // Make optional with ?
   publicId: string;
 }
 
 export interface ProductTypes {
   _id: string;
-   brand: string; // <--- ADD THIS LINE
+  data: FormData;
+  brand: string; // <--- ADD THIS LINE
   status: ProductStatusType;
   title: string;
   category: string;
@@ -80,10 +81,10 @@ export enum ProductFilterBy {
 
 export interface ProductListApiQuery {
   category?: string;
-  brand?: string;             // <--- Add this line
+  brand?: string; // <--- Add this line
   pageLength?: number;
-  featured?: boolean; // Add this line  
-  [key: string]: any; // Optional: Allow any other dynamic properties
+  featured?: boolean; // Add this line
+  [key: string]: unknown; // Use unknown instead of any
   limit: number;
   discountPercentUpTo?: number;
   startPrice?: string;
@@ -95,17 +96,14 @@ export interface ProductListApiQuery {
 export interface ProductListType {
   _id: string;
   title: string;
-  imgUrl: string;
+  brand: string;
   price: number;
-  discountPercent: number;
   discountPrice: number;
-  offerText: string;
-  inStock: boolean;
+  discountPercent: number;
   category: string;
-  ratings: {
-    star: number;
-    totalReviews: number;
-  };
+  images: { defaultImg: string; publicId: string }[];
+  ratings: { star: number; totalReviews: number };
+  inStock?: boolean; // Add this if needed
 }
 
 // src/types/product.types.ts
@@ -114,7 +112,74 @@ export interface ProductsResponse {
   success: boolean;
   message: string;
   // This is the missing piece
-  products: ProductListType[]; 
+  products: ProductListType[];
   // If your API wraps it in a 'data' object, do this instead:
   // data: { products: ProductListType[] };
+}
+
+// In product.types.ts
+export interface ProductImage {
+  isDefault: boolean;
+  defaultImg: string;
+  cardImg: string;
+  displayImg: string;
+  commentImg?: string; // Make optional
+  smallImg?: string; // Make optional
+  publicId: string;
+}
+
+// In your cartSlice.ts or types
+export interface CartDataTypes {
+  title: string;
+  imgUrl: string;
+  price: number;
+  discountPrice: number;
+  discountPercent: number;
+  productId: string;
+  brand?: string; // Optional
+  category?: string; // Optional
+  // ... other properties
+}
+
+export interface SponsorItem {
+  _id: string;
+  title: string;
+  description: string;
+  buttonText: string;
+  buttonLink: string;
+  imageUrl: string;
+  brand: string;
+}
+
+export interface ProductDataTypes {
+  title: string;
+  category: string;
+  price: number;
+  discountPrice: number;
+  discountPercent: number;
+  productSectionName: ProductSectionNameType;
+  offerText: string;
+  sellerId: string;
+  inStock: boolean;
+  images: string[];
+  description: string;
+  specification: string;
+  tags: string[];
+}
+
+export interface BuyNowButtonProps {
+  product: {
+    _id: string;
+    title: string;
+    price: number;
+    discountPrice?: number;
+    discountPercent?: number;
+    brand?: string;
+    category?: string;
+    images?: {
+      // Must be 'images' plural
+      defaultImg: string;
+      publicId: string;
+    }[];
+  };
 }

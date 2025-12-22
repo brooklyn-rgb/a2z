@@ -6,20 +6,24 @@ const withBundleAnalyzer = require('@next/bundle-analyzer')({
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    domains: [
-      'images.unsplash.com',
-      'i.ibb.co',
-      'plus.unsplash.com',
-      'res.cloudinary.com',
-      'img.freepik.com',
+    // For external domains you might still use
+    remotePatterns: [
+      { protocol: 'https', hostname: 'a2zautobodyparts.co.za' },
+      { protocol: 'https', hostname: 'placehold.co' },
+      { protocol: 'https', hostname: 'images.unsplash.com' },
+      { protocol: 'https', hostname: 'res.cloudinary.com' },
     ],
+    // Local images in /public work automatically
   },
   eslint: {
     ignoreDuringBuilds: true,
   },
   output: 'standalone',
-
-  experimental: {},
+  // Add environment variables
+  env: {
+    NEXT_PUBLIC_BASE_URL:
+      process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000',
+  },
 };
 
 module.exports = withBundleAnalyzer(nextConfig);

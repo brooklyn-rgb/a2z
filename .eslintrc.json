@@ -8,7 +8,15 @@
   "parser": "@typescript-eslint/parser",
   "plugins": ["react", "react-hooks", "@typescript-eslint", "prettier"],
   "rules": {
-    "prettier/prettier": ["error", {}, { "usePrettierrc": true }],
+    "prettier/prettier": [
+      "error",
+      {
+        "endOfLine": "auto" // Add this to handle different line endings
+      },
+      {
+        "usePrettierrc": true
+      }
+    ],
     "react/react-in-jsx-scope": "off",
     "react/no-unescaped-entities": "off",
     "@next/next/no-page-custom-font": "off",

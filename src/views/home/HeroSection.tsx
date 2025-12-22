@@ -1,10 +1,21 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { FaCar, FaHeadset, FaRegCreditCard, FaShieldAlt, FaShippingFast } from 'react-icons/fa';
+import { useCallback, useEffect, useState } from 'react';
+import {
+  FaCar,
+  FaHeadset,
+  FaRegCreditCard,
+  FaShieldAlt,
+  FaShippingFast,
+} from 'react-icons/fa';
 import { GiCarDoor } from 'react-icons/gi';
-import { MdDirectionsCar, MdKeyboardArrowLeft, MdKeyboardArrowRight, MdOutlineKeyboardArrowRight } from 'react-icons/md';
+import {
+  MdDirectionsCar,
+  MdKeyboardArrowLeft,
+  MdKeyboardArrowRight,
+  MdOutlineKeyboardArrowRight,
+} from 'react-icons/md';
 
 const HeroSection = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -16,7 +27,8 @@ const HeroSection = () => {
       id: 1,
       title: 'Premium Auto Body Parts',
       subtitle: 'German Engineering Specialists',
-      description: 'OEM-spec body parts for BMW, Audi, Mercedes-Benz & Porsche with guaranteed fitment',
+      description:
+        'OEM-spec body parts for BMW, Audi, Mercedes-Benz & Porsche with guaranteed fitment',
       cta: 'Browse Parts',
       ctaLink: '/shop?category=body-parts',
       imageBg: 'bg-gradient-to-br from-blue-900 to-gray-900',
@@ -29,7 +41,8 @@ const HeroSection = () => {
       id: 2,
       title: 'BMW Body Parts',
       subtitle: 'M Series & All Models',
-      description: 'Complete range of body panels, bumpers, lights and trim for all BMW models',
+      description:
+        'Complete range of body panels, bumpers, lights and trim for all BMW models',
       cta: 'Shop BMW',
       ctaLink: '/shop?brand=bmw',
       imageBg: 'bg-gradient-to-br from-blue-800 to-gray-800',
@@ -42,7 +55,8 @@ const HeroSection = () => {
       id: 3,
       title: 'Audi & Porsche Parts',
       subtitle: 'Premium Body Components',
-      description: 'High-quality replacement parts for Audi and Porsche vehicles',
+      description:
+        'High-quality replacement parts for Audi and Porsche vehicles',
       cta: 'View Collection',
       ctaLink: '/shop?brand=audi,porsche',
       imageBg: 'bg-gradient-to-br from-red-900 to-gray-900',
@@ -55,7 +69,8 @@ const HeroSection = () => {
       id: 4,
       title: 'Mercedes-Benz Parts',
       subtitle: 'OEM Quality & Fit',
-      description: 'Genuine-style body parts for Mercedes-Benz C-Class, E-Class, S-Class and more',
+      description:
+        'Genuine-style body parts for Mercedes-Benz C-Class, E-Class, S-Class and more',
       cta: 'Shop Mercedes',
       ctaLink: '/shop?brand=mercedes',
       imageBg: 'bg-gradient-to-br from-silver-800 to-gray-800',
@@ -66,6 +81,30 @@ const HeroSection = () => {
     },
   ];
 
+  const handlePrevSlide = useCallback(() => {
+    if (isAnimating) return;
+    setIsAnimating(true);
+    setCurrentSlide(prev => (prev === 0 ? slides.length - 1 : prev - 1));
+    setTimeout(() => setIsAnimating(false), 500);
+  }, [isAnimating, slides.length]);
+
+  const handleNextSlide = useCallback(() => {
+    if (isAnimating) return;
+    setIsAnimating(true);
+    setCurrentSlide(prev => (prev === slides.length - 1 ? 0 : prev + 1));
+    setTimeout(() => setIsAnimating(false), 500);
+  }, [isAnimating, slides.length]);
+
+  const goToSlide = useCallback(
+    (index: number) => {
+      if (isAnimating) return;
+      setIsAnimating(true);
+      setCurrentSlide(index);
+      setTimeout(() => setIsAnimating(false), 500);
+    },
+    [isAnimating]
+  );
+
   // Auto slide functionality
   useEffect(() => {
     const interval = setInterval(() => {
@@ -73,28 +112,7 @@ const HeroSection = () => {
     }, 6000);
 
     return () => clearInterval(interval);
-  }, [currentSlide]);
-
-  const handlePrevSlide = () => {
-    if (isAnimating) return;
-    setIsAnimating(true);
-    setCurrentSlide(prev => (prev === 0 ? slides.length - 1 : prev - 1));
-    setTimeout(() => setIsAnimating(false), 500);
-  };
-
-  const handleNextSlide = () => {
-    if (isAnimating) return;
-    setIsAnimating(true);
-    setCurrentSlide(prev => (prev === slides.length - 1 ? 0 : prev + 1));
-    setTimeout(() => setIsAnimating(false), 500);
-  };
-
-  const goToSlide = (index: number) => {
-    if (isAnimating) return;
-    setIsAnimating(true);
-    setCurrentSlide(index);
-    setTimeout(() => setIsAnimating(false), 500);
-  };
+  }, [handleNextSlide]);
 
   // Auto parts features
   const features = [
@@ -214,12 +232,18 @@ const HeroSection = () => {
 
                     {/* Quick contact info */}
                     <div className="mt-6 flex items-center gap-4">
-                      <a href="tel:+27100234831" className="flex items-center gap-2 text-white/90 hover:text-white">
+                      <a
+                        href="tel:+27100234831"
+                        className="flex items-center gap-2 text-white/90 hover:text-white"
+                      >
                         <FaHeadset />
                         <span className="text-sm">010 023 4831</span>
                       </a>
                       <span className="text-white/30">|</span>
-                      <a href="mailto:sales@a2zautobodyparts.co.za" className="text-sm text-white/90 hover:text-white">
+                      <a
+                        href="mailto:sales@a2zautobodyparts.co.za"
+                        className="text-sm text-white/90 hover:text-white"
+                      >
                         sales@a2zautobodyparts.co.za
                       </a>
                     </div>
@@ -239,10 +263,18 @@ const HeroSection = () => {
                       <div className="absolute -top-4 left-4 flex gap-2">
                         {slide.id === 1 && (
                           <>
-                            <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded">BMW</span>
-                            <span className="bg-red-600 text-white text-xs px-2 py-1 rounded">Audi</span>
-                            <span className="bg-gray-600 text-white text-xs px-2 py-1 rounded">Mercedes</span>
-                            <span className="bg-black text-white text-xs px-2 py-1 rounded">Porsche</span>
+                            <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded">
+                              BMW
+                            </span>
+                            <span className="bg-red-600 text-white text-xs px-2 py-1 rounded">
+                              Audi
+                            </span>
+                            <span className="bg-gray-600 text-white text-xs px-2 py-1 rounded">
+                              Mercedes
+                            </span>
+                            <span className="bg-black text-white text-xs px-2 py-1 rounded">
+                              Porsche
+                            </span>
                           </>
                         )}
                       </div>
@@ -250,8 +282,14 @@ const HeroSection = () => {
                       {/* Product container */}
                       <div className="relative w-full bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 overflow-hidden p-6">
                         {/* Placeholder for auto parts image */}
-                        <div className="w-full h-64 bg-gradient-to-br from-white/20 to-transparent rounded-lg flex items-center justify-center">
+                        <div className="w-full h-64 bg-gradient-to-br from-white/20 to-transparent rounded-lg flex items-center justify-center relative">
                           <FaCar className="text-6xl text-white/40" />
+                          {/* FIXED IMAGE TAG */}
+                          <img
+                            src="/images/banners/yellow.png"
+                            alt="Yellow banner"
+                            className="absolute inset-0 w-full h-full object-cover rounded-lg"
+                          />
                           <div className="absolute bottom-4 text-white/70 text-sm">
                             {slide.id === 1 && 'Premium Auto Body Parts'}
                             {slide.id === 2 && 'BMW Body Components'}
@@ -345,7 +383,9 @@ const HeroSection = () => {
                   className={`group relative overflow-hidden rounded-lg h-40 bg-gradient-to-br ${category.bg} shadow-md hover:shadow-lg transition-all duration-300`}
                 >
                   <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-4 z-10">
-                    <div className={`w-12 h-12 rounded-full ${category.brandColor} flex items-center justify-center text-white`}>
+                    <div
+                      className={`w-12 h-12 rounded-full ${category.brandColor} flex items-center justify-center text-white`}
+                    >
                       {category.icon}
                     </div>
                     <span className="text-lg font-semibold text-center text-white">
@@ -382,9 +422,12 @@ const HeroSection = () => {
           {/* Call to Action */}
           <div className="mt-12 text-center">
             <div className="bg-gradient-to-r from-blue-900 to-gray-900 rounded-xl p-8 text-white">
-              <h3 className="text-2xl font-bold mb-3">Need Help Finding Parts?</h3>
+              <h3 className="text-2xl font-bold mb-3">
+                Need Help Finding Parts?
+              </h3>
               <p className="mb-6 max-w-2xl mx-auto">
-                Our specialists can help you find the exact body part for your vehicle with VIN matching service
+                Our specialists can help you find the exact body part for your
+                vehicle with VIN matching service
               </p>
               <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
                 <a

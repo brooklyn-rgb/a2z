@@ -1,43 +1,48 @@
-import { ProductListApiQuery, ProductListType } from '@/types/product.types';
+import {
+  ProductListApiQuery,
+  ProductTypes,
+  SponsorItem,
+} from '@/types/product.types';
 import { apiSlice } from './index';
 
-/** 
- * 1. Define strict interfaces for your API 
- */
+// Define proper interfaces
 interface ProductsResponse {
   success: boolean;
   data: {
-    products: ProductListType[];
+    products: ProductTypes[];
     totals: number;
     exitsLength: number;
   };
 }
 
-/** 
- * Type for the raw response from your backend 
- * before it gets converted by transformResponse 
- */
 interface RawBackendResponse {
   success: boolean;
-  data: ProductListType[];
+  data: ProductTypes[];
   count: number;
 }
 
 export const productApi = apiSlice.injectEndpoints({
   overrideExisting: true,
-  endpoints: (builder) => ({
-    
-    /**
-     * getProducts: Used for the Shop Page.
-     * Generates useGetProductsQuery (auto-fetch) and useLazyGetProductsQuery (manual).
-     */
-    getProducts: builder.query<ProductsResponse, { query: ProductListApiQuery }>({
-      query: (arg: { query: ProductListApiQuery }) => ({
+  endpoints: builder => ({
+    getProducts: builder.query<
+      ProductsResponse,
+      { query: ProductListApiQuery }
+    >({
+      query: arg => ({
         url: `/api/products`,
         method: 'POST',
         body: arg,
       }),
-      // Use transformResponse to map backend keys (e.g., 'count') to your UI keys (e.g., 'totals')
+      providesTags: result =>
+        result
+          ? [
+              ...result.data.products.map(({ _id }) => ({
+                type: 'Product' as const,
+                id: _id,
+              })),
+              { type: 'Product', id: 'LIST' },
+            ]
+          : [{ type: 'Product', id: 'LIST' }],
       transformResponse: (response: RawBackendResponse): ProductsResponse => ({
         success: response.success,
         data: {
@@ -48,36 +53,81 @@ export const productApi = apiSlice.injectEndpoints({
       }),
     }),
 
-    /**
-     * getProductsMutation: Use if you specifically need a manual trigger 
-     * that behaves like a POST action (though LazyQuery is usually preferred).
-     */
-    getProductsMutation: builder.mutation<ProductsResponse, { query: ProductListApiQuery }>({
-      query: (arg: { query: ProductListApiQuery }) => ({
-        url: `/api/products`,
+    getProductDetails: builder.query<ProductTypes, string>({
+      query: id => `/api/products/${id}`,
+      providesTags: (result, error, id) => [{ type: 'Product' as const, id }],
+    }),
+
+    getSellerProduct: builder.query<ProductTypes, string>({
+      query: id => `/api/seller/products/${id}`,
+      providesTags: (result, error, id) => [{ type: 'Product' as const, id }],
+    }),
+
+    getSellerProducts: builder.query<ProductTypes[], void>({
+      query: () => '/api/seller/products',
+      providesTags: result =>
+        result
+          ? [
+              ...result.map(({ _id }) => ({
+                type: 'Product' as const,
+                id: _id,
+              })),
+              { type: 'Product', id: 'LIST' },
+            ]
+          : [{ type: 'Product', id: 'LIST' }],
+    }),
+
+    createProduct: builder.mutation<ProductTypes, FormData>({
+      query: body => ({
+        url: '/api/seller/products',
         method: 'POST',
-        body: arg,
+        body,
       }),
+      invalidatesTags: [{ type: 'Product', id: 'LIST' }],
     }),
 
-    getSponsorItem: builder.query<any, void>({
+    updateProduct: builder.mutation<
+      ProductTypes,
+      { id: string; data: FormData }
+    >({
+      query: ({ id, data }) => ({
+        url: `/api/seller/products/${id}`,
+        method: 'PATCH',
+        body: data,
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: 'Product' as const, id },
+        { type: 'Product', id: 'LIST' },
+      ],
+    }),
+
+    deleteProduct: builder.mutation<void, string>({
+      query: id => ({
+        url: `/api/seller/products/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: (result, error, id) => [
+        { type: 'Product' as const, id },
+        { type: 'Product', id: 'LIST' },
+      ],
+    }),
+
+    getSponsorItem: builder.query<SponsorItem, void>({
       query: () => '/api/sponsor-items',
-    }),
-
-    getProductDetails: builder.query<any, string>({
-      query: (id: string) => `/api/products/${id}`,
+      providesTags: result =>
+        result ? [{ type: 'Product' as const, id: 'SPONSOR' }] : [],
     }),
   }),
 });
 
-/** 
- * 2. Export hooks. 
- * RTK Query automatically generates these based on the endpoint names.
- */
-export const { 
-  useGetProductsQuery,         // Automatically fetches on component mount
-  useLazyGetProductsQuery,     // Trigger manually (e.g., for home page load)
-  useGetProductsMutationMutation, // For manual POST actions
-  useGetSponsorItemQuery,    
-  useGetProductDetailsQuery     
+export const {
+  useGetProductsQuery,
+  useLazyGetProductsQuery,
+  useGetSponsorItemQuery,
+  useGetProductDetailsQuery,
+  useGetSellerProductQuery,
+  useGetSellerProductsQuery,
+  useCreateProductMutation,
+  useUpdateProductMutation,
+  useDeleteProductMutation,
 } = productApi;
