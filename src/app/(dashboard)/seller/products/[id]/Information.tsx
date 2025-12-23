@@ -19,7 +19,7 @@ function Information({ data }: { data: ProductTypes }) {
   const router = useRouter();
 
   const deleteHandler = async (productId: string) => {
-    // Pass productId directly as string, not as an object
+    // CORRECT: Pass productId directly as string
     await deleteProduct(productId);
   };
 
@@ -90,8 +90,8 @@ function Information({ data }: { data: ProductTypes }) {
       </div>
 
       <Button
-        onClick={() => deleteHandler(data._id)}
-        disabled={isLoadingDelete}
+        onClick={() => data._id && deleteHandler(data._id)}
+        disabled={isLoadingDelete || !data._id}
         isLoading={isLoadingDelete}
         loadingColor="red"
         loadingSpinnerSize={40}
