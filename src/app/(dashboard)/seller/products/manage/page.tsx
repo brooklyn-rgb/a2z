@@ -2,49 +2,79 @@
 import Pagination from '@/components/common/PaginationComponent';
 import { PATH_SELLER } from '@/utils/routes';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { IoIosArrowForward } from 'react-icons/io';
 import {
   useDeleteProductMutation,
   useGetSellerProductsQuery,
 } from '@/redux/services/productApi';
-import { useAppDispatch, useAppSelector } from '@/redux/hooks';
+import { useAppDispatch } from '@/redux/hooks';
 import { AlertType, showAlert } from '@/redux/features/alertSlice';
 import ProductListTable from './ProductListTable';
 import Button from '@/components/common/Button';
 import { FaRotateLeft } from 'react-icons/fa6';
 import Skeleton from '@/components/common/Skeleton';
 import { useRouter } from 'next/navigation';
+import {
+  ProductTypes,
+  SellerProductList,
+  ProductStatusType,
+} from '@/types/product.types'; // Import the existing type
 
 //---------------------------------------------------------------------
 
 //---------------------------------------------------------------------
 
 export default function ManagePage() {
-  const { user } = useAppSelector(state => state.authSlice);
+  // Removed unused user variable entirely
   const [
     deleteProduct,
     { isLoading: isLoadingDelete, isSuccess: isSuccessDelete },
   ] = useDeleteProductMutation();
 
   const [currentPage, setCurrentPage] = useState(0);
-  const { data, isLoading, refetch } = useGetSellerProductsQuery({
-    sellerId: user?._id,
-  });
+  // FIX: Call without arguments since API doesn't accept parameters
+  const { data, isLoading, refetch } = useGetSellerProductsQuery();
 
   // USE HOOK
   const dispatch = useAppDispatch();
   const router = useRouter();
 
   const deleteHandler = async (productId: string) => {
-    await deleteProduct({ productId: productId });
+    await deleteProduct(productId); // Also fix this - pass ID directly as string
   };
 
   const editHandler = (productId: string) => {
     router.push(`${PATH_SELLER.products.edit}/${productId}`);
   };
 
-  const reFetchProductData = () => refetch();
+  // Wrap refetch in useCallback to avoid infinite re-renders
+  const reFetchProductData = useCallback(() => {
+    refetch();
+  }, [refetch]);
+
+  // Transform ProductTypes[] to SellerProductList[]
+  const transformProducts = (
+    products: ProductTypes[] = []
+  ): SellerProductList[] => {
+    return products.map(product => ({
+      _id: product._id || '',
+      title: product.title,
+      price: product.price,
+      inStock: product.inStock,
+      discountPrice: product.discountPrice || 0,
+      discountPercent: product.discountPercent || 0,
+      imgUrl: product.images?.[0]?.defaultImg || '/images/placeholder.png', // Get first image or placeholder
+      category: product.category,
+      brand: product.brand || '',
+      status: product.status as ProductStatusType, // Cast to correct type
+      createdAt: product.createdAt ? new Date(product.createdAt) : new Date(), // Convert to Date object
+      updatedAt: product.updatedAt ? new Date(product.updatedAt) : new Date(), // Add updatedAt if required
+      // Add any other required fields from SellerProductList type
+    }));
+  };
+
+  const sellerProducts = transformProducts(data);
 
   useEffect(() => {
     if (!isSuccessDelete) return;
@@ -58,7 +88,7 @@ export default function ManagePage() {
     );
 
     return () => undefined;
-  }, [isSuccessDelete, dispatch]);
+  }, [isSuccessDelete, dispatch, reFetchProductData]); // Added reFetchProductData
 
   return (
     <div className="w-full h-full">
@@ -114,12 +144,12 @@ export default function ManagePage() {
         </>
       ) : null}
 
-      {!isLoading && data?.data?.length ? (
+      {!isLoading && sellerProducts.length ? (
         <>
           <ProductListTable
             deleteHandler={deleteHandler}
             editHandler={editHandler}
-            products={data.data}
+            products={sellerProducts}
             isLoadingDelete={isLoadingDelete}
           />
 
@@ -128,16 +158,18 @@ export default function ManagePage() {
               limit={10}
               currentPage={currentPage}
               setCurrentPage={setCurrentPage}
-              totalProducts={data.data.length}
+              totalProducts={sellerProducts.length}
             />
           </div>
         </>
       ) : null}
 
-      {!isLoading && !data?.data.length ? (
+      {!isLoading && !sellerProducts.length ? (
         <div className="w-full flex flex-col items-center justify-center pb-6">
           <h2 className="p-10 text-gray-600 text-center">
-            You don't have uploaded any product!
+            {data?.length 
+              ? "You don't have any products in your account."
+              : "You don't have uploaded any product!"}
           </h2>
           <Link
             href={PATH_SELLER.products.new}
