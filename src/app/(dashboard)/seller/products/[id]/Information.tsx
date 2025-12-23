@@ -19,7 +19,8 @@ function Information({ data }: { data: ProductTypes }) {
   const router = useRouter();
 
   const deleteHandler = async (productId: string) => {
-    await deleteProduct({ productId: productId });
+    // Pass productId directly as string, not as an object
+    await deleteProduct(productId);
   };
 
   useEffect(() => {
@@ -35,7 +36,7 @@ function Information({ data }: { data: ProductTypes }) {
     router.replace(PATH_SELLER.products.manage);
 
     return () => undefined;
-  }, [isSuccessDelete, dispatch]);
+  }, [isSuccessDelete, dispatch, router]);
 
   const selPrice =
     data.discountPrice > 0 && data.discountPercent > 0
@@ -53,14 +54,14 @@ function Information({ data }: { data: ProductTypes }) {
 
       <div className="mt-3 flex flex-col items-start">
         <div className="flex items-center">
-          <StarRating rating={data.ratings.star} />
+          <StarRating rating={data.ratings?.star || 0} />
           <p className="text-[10px] font-medium text-gray-500 pt-[5px] ml-[8px]">
-            ({data.ratings.totalReviews})
+            ({data.ratings?.totalReviews || 0})
           </p>
         </div>
 
         <p className="text-[12px] text-gray-500 pt-[3px]">
-          ({data.totalQuestion}) Questions
+          ({data.totalQuestion || 0}) Questions
         </p>
       </div>
 
