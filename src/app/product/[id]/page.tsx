@@ -10,17 +10,16 @@ import { CartDataTypes, addToCart } from '@/redux/features/cartSlice';
 import { useAppDispatch } from '@/redux/hooks';
 import { useGetProductDetailsQuery } from '@/redux/services/productApi';
 import { ProductTypes } from '@/types/product.types';
-import { useRouter } from 'next/navigation';
-import { FC, useEffect } from 'react';
+import { useRouter, useParams } from 'next/navigation';
+import { useEffect } from 'react';
 import DisplayImage from './DisplayImage';
 import Info from './Info';
 
-interface ProductClientPageProps {
-  id: string;
-}
-
-const ProductClientPage: FC<ProductClientPageProps> = ({ id }) => {
-  const { data, isLoading, isError } = useGetProductDetailsQuery(id);
+export default function ProductPage() {
+  const { id } = useParams(); // Get id from URL params
+  const productId = Array.isArray(id) ? id[0] : id || '';
+  
+  const { data, isLoading, isError } = useGetProductDetailsQuery(productId);
   const router = useRouter();
   const dispatch = useAppDispatch();
 
@@ -118,6 +117,4 @@ const ProductClientPage: FC<ProductClientPageProps> = ({ id }) => {
       </div>
     </main>
   );
-};
-
-export default ProductClientPage;
+}
