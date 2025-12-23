@@ -6,7 +6,9 @@ import Button from './Button';
 import CustomModal from './CustomModal';
 
 const LoginFirst = () => {
-  const loginFirst = useAppSelector(state => state.loginFirst || { isOpen: false });
+  const loginFirst = useAppSelector(
+    state => state.loginFirst || { isOpen: false }
+  );
 
   const router = useRouter();
   const dispatch = useAppDispatch();
