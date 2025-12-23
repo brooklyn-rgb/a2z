@@ -11,7 +11,7 @@ import { useAppDispatch } from '@/redux/hooks';
 import { useGetProductDetailsQuery } from '@/redux/services/productApi';
 import { ProductTypes } from '@/types/product.types';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { FC, useEffect } from 'react';
 import DisplayImage from './DisplayImage';
 import Info from './Info';
 
@@ -19,7 +19,7 @@ interface ProductClientPageProps {
   id: string;
 }
 
-export default function ProductClientPage({ id }: ProductClientPageProps) {
+const ProductClientPage: FC<ProductClientPageProps> = ({ id }) => {
   const { data, isLoading, isError } = useGetProductDetailsQuery(id);
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -31,27 +31,20 @@ export default function ProductClientPage({ id }: ProductClientPageProps) {
   }, [isError, router]);
 
   if (isLoading) return <LoadingPage />;
+  if (!data) return null;
 
-  // Check if data exists and has the expected structure
-  if (!data) {
-    return null;
-  }
-
-  // Type assertion with proper import
   const product = data as ProductTypes;
 
-  // Check if product has required properties
-  if (!product?.title || !product?.images) {
-    return null;
-  }
-
   const handleAddToCart = () => {
-    // 1. Validation check
     if (!product._id) return;
+
+    // Use nested structure from 2025 MongoDB seed
+    const displayImg =
+      product.images?.[0]?.defaultImg || '/images/placeholder.png';
 
     const cartItem: CartDataTypes = {
       title: product.title,
-      imgUrl: product.images?.[0]?.defaultImg || '/images/placeholder.png',
+      imgUrl: displayImg,
       price: product.price,
       discountPrice: product.discountPrice || 0,
       discountPercent: product.discountPercent || 0,
@@ -60,68 +53,71 @@ export default function ProductClientPage({ id }: ProductClientPageProps) {
       category: product.category || '',
     };
 
-    // 2. Dispatch (Ensure this matches your cartSlice payload expectation)
     dispatch(addToCart({ data: cartItem, quantity: 1 }));
-
-    // 3. Feedback (Temporary alert to verify the button works)
     alert(`${product.title} added to cart!`);
   };
 
   return (
-    <main className="min-h-[60vh] max-w-[1201px] w-full m-auto px-4 pb-4">
-      {/* Breadcrumbs - add this if missing */}
-      <div className="py-4 mb-6 border-b">
-        <nav className="text-sm text-gray-600">
-          <a href="/" className="hover:text-blue-600">
-            Home
-          </a>
-          <span className="mx-2">/</span>
-          <a href="/shop" className="hover:text-blue-600">
-            Shop
-          </a>
-          <span className="mx-2">/</span>
-          <span className="text-gray-900 font-medium">{product.title}</span>
-        </nav>
-      </div>
+    <main className="min-h-[60vh] max-w-[1200px] w-full m-auto px-4 pb-10">
+      <nav className="py-6 text-sm text-gray-500">
+        <a href="/" className="hover:text-blue-900 transition-colors">
+          Home
+        </a>
+        <span className="mx-2">/</span>
+        <a href="/shop" className="hover:text-blue-900 transition-colors">
+          Shop
+        </a>
+        <span className="mx-2">/</span>
+        <span className="text-gray-900 font-bold uppercase">
+          {product.brand}
+        </span>
+      </nav>
 
-      <div className="flex flex-col lg:flex-row justify-between gap-8">
-        <DisplayImage images={product.images} />
-        <Info data={product} />
-      </div>
-
-      {/* Add to Cart and Buy Now Buttons */}
-      <div className="mt-8 max-w-2xl mx-auto">
-        <div className="flex gap-4">
-          <Button
-            onClick={handleAddToCart}
-            className="flex-1 py-3 bg-blue-900 hover:bg-blue-800 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-300"
-          >
-            Add to Cart
-          </Button>
-
-          <BuyNowButton
-            product={{
-              _id: product._id,
-              title: product.title,
-              price: product.price,
-              discountPrice: product.discountPrice,
-              discountPercent: product.discountPercent,
-              brand: product.brand,
-              category: product.category,
-              // Change 'image' to 'images' and pass the whole array
-              images: product.images,
-            }}
-          />
+      <div className="flex flex-col lg:flex-row justify-between gap-12">
+        <div className="w-full lg:w-1/2">
+          <DisplayImage images={product.images} />
+        </div>
+        <div className="w-full lg:w-1/2">
+          <Info data={product} />
+          <div className="mt-8 flex flex-col sm:flex-row gap-4 border-t pt-8">
+            <Button
+              onClick={handleAddToCart}
+              className="flex-1 py-4 bg-white border-2 border-blue-900 text-blue-900 font-bold rounded-lg hover:bg-blue-50 transition-all"
+            >
+              Add to Cart
+            </Button>
+            <div className="flex-1">
+              <BuyNowButton
+                product={{
+                  _id: product._id,
+                  title: product.title,
+                  price: product.price,
+                  discountPrice: product.discountPrice,
+                  discountPercent: product.discountPercent,
+                  brand: product.brand,
+                  category: product.category,
+                  images: product.images,
+                }}
+              />
+            </div>
+          </div>
+          <p className="mt-4 text-[10px] text-gray-400 text-center uppercase tracking-tighter">
+            * Use VIN for fitment guarantee
+          </p>
         </div>
       </div>
 
-      <ProductAdditionalInfo
-        componentFor={ComponentShowOnType.UserProductDetails}
-        specification={product.specification}
-        description={product.description}
-        productId={product._id}
-        totalReview={product.ratings?.totalReviews}
-      />
+      <div className="mt-16">
+        <ProductAdditionalInfo
+          componentFor={ComponentShowOnType.UserProductDetails}
+          specification={product.specification}
+          description={product.description}
+          productId={product._id}
+          totalReview={product.ratings?.totalReviews}
+        />
+      </div>
     </main>
   );
-}
+};
+
+export default ProductClientPage;
