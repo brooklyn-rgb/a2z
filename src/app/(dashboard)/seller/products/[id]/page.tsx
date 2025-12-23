@@ -13,12 +13,11 @@ import Information from './Information';
 import { useGetSellerProductQuery } from '@/redux/services/productApi';
 
 export default function Page({ params }: { params: { id: string } }) {
-  const { data } = useGetSellerProductQuery({
-    productId: params.id,
-  });
+  // Pass the product ID directly as a string
+  const { data } = useGetSellerProductQuery(params.id);
   const router = useRouter();
 
-  if (!data?.data?._id) return undefined;
+  if (!data?._id) return undefined;
 
   return (
     <div className="w-full h-full">
@@ -35,7 +34,7 @@ export default function Page({ params }: { params: { id: string } }) {
               Dashboard
             </Link>
             <BsDot className="text-gray-600" />
-            <span className="text-gray-600">Products / {data.data.title}</span>
+            <span className="text-gray-600">Products / {data.title}</span>
           </div>
         </div>
 
@@ -53,17 +52,17 @@ export default function Page({ params }: { params: { id: string } }) {
 
       <div className="w-full min-h-[400px]">
         <div className="bg-white flex flex-row">
-          <ImageGallery images={data.data.images} />
+          <ImageGallery images={data.images} />
           {/** /@ts-ignore */}
-          <Information data={data?.data} />
+          <Information data={data} />
         </div>
 
         <ProductAdditionalInfo
-          specification={data.data.specification}
-          description={data.data.description}
+          specification={data.specification}
+          description={data.description}
           componentFor={ComponentShowOnType.SellerDashboardProductDetails}
-          productId={data.data._id}
-          totalReview={data.data.ratings.totalReviews}
+          productId={data._id}
+          totalReview={data.ratings?.totalReviews || 0}
         />
       </div>
     </div>
