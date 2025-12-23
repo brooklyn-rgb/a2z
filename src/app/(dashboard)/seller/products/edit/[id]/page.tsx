@@ -1,38 +1,40 @@
 'use client';
 
+import Button from '@/components/common/Button';
+import CheckBox from '@/components/common/CheckBox';
+import { InputApiErrorMessage } from '@/components/common/FormikCustomInput';
+import Input from '@/components/common/Input';
+import { LoadingPage } from '@/components/common/loading';
+import ReactDraftWysiwyg from '@/components/common/ReactDraftWysiwyg';
+import { Upload } from '@/components/common/Upload';
+import { AlertType, showAlert } from '@/redux/features/alertSlice';
+import { useAppDispatch, useAppSelector } from '@/redux/hooks';
+import { useGetCategoryQuery } from '@/redux/services/categoryApi';
+import {
+  useGetSellerProductQuery,
+  useUpdateProductMutation,
+} from '@/redux/services/productApi';
+import { PATH_SELLER } from '@/utils/routes';
+import Autocomplete from '@mui/material/Autocomplete';
+import TextField from '@mui/material/TextField';
+import { EditorState, convertFromRaw } from 'draft-js';
+import { useRouter } from 'next/navigation';
 import {
   ChangeEvent,
   FormEvent,
   Suspense,
+  SyntheticEvent,
   useCallback,
   useEffect,
   useState,
 } from 'react';
-import PageTitle from '../../../PageTitle';
-import Button from '@/components/common/Button';
 import { AiOutlineClose } from 'react-icons/ai';
-import Input from '@/components/common/Input';
-import { useGetCategoryQuery } from '@/redux/services/categoryApi';
-import Autocomplete from '@mui/material/Autocomplete';
-import TextField from '@mui/material/TextField';
-import CheckBox from '@/components/common/CheckBox';
+import PageTitle from '../../../PageTitle';
 import {
   calculateDiscountedPrice,
   productSections,
   productTags,
 } from '../../add-new/utils';
-import { useAppDispatch, useAppSelector } from '@/redux/hooks';
-import {
-  useGetSellerProductQuery,
-  useUpdateProductMutation,
-} from '@/redux/services/productApi';
-import { InputApiErrorMessage } from '@/components/common/FormikCustomInput';
-import { AlertType, showAlert } from '@/redux/features/alertSlice';
-import { useRouter } from 'next/navigation';
-import { PATH_SELLER } from '@/utils/routes';
-import { LoadingPage } from '@/components/common/loading';
-import ReactDraftWysiwyg from '@/components/common/ReactDraftWysiwyg';
-import { Upload } from '@/components/common/Upload';
 import {
   FieldName,
   InitialState,
@@ -40,17 +42,22 @@ import {
   appendDataToForm,
   initialState,
 } from '../utils';
-import { EditorState, convertFromRaw } from 'draft-js';
-import { ProductSectionName } from '@/types/product.types';
+
+// Define a type for uploaded files with preview
+type UploadedFile = File & { preview: string };
+
+// Create extended state type to handle mixed image arrays
+type ExtendedInitialState = Omit<InitialState, 'images'> & {
+  images: (string | UploadedFile)[];
+};
 
 //-----------------------------------------------------------------------
 
 //-----------------------------------------------------------------------
 
 export default function CreateProduct({ params }: { params: { id: string } }) {
-  const getProduct = useGetSellerProductQuery({
-    productId: params.id,
-  });
+  // Fix: Pass ID as string, not object
+  const getProduct = useGetSellerProductQuery(params.id);
 
   const [updateProduct, { isLoading, error: updateError, isError, isSuccess }] =
     useUpdateProductMutation();
@@ -62,7 +69,10 @@ export default function CreateProduct({ params }: { params: { id: string } }) {
   //PRODUCT STATES-----------------------
   const [selectAbleTags, setSelectAbleTags] = useState<string[]>([]);
   const [initialStateData, setInitialStateData] =
-    useState<InitialState>(initialState);
+    useState<ExtendedInitialState>({
+      ...initialState,
+      images: [] as (string | UploadedFile)[],
+    });
 
   const [error, setError] = useState<{ fieldName: string; error: string }>({
     fieldName: '',
@@ -122,7 +132,7 @@ export default function CreateProduct({ params }: { params: { id: string } }) {
       //
       case 'category':
         if (typeof value !== 'string') return;
-        const tags = productTags[value];
+        const tags = productTags[value as keyof typeof productTags] || [];
         setSelectAbleTags(tags);
         setInitialStateData(prevS => ({
           ...prevS,
@@ -142,6 +152,7 @@ export default function CreateProduct({ params }: { params: { id: string } }) {
           ...prevS,
           tags: [...prevS.tags, input],
         }));
+        break;
 
       default:
         setInitialStateData(prevS => ({
@@ -162,28 +173,36 @@ export default function CreateProduct({ params }: { params: { id: string } }) {
   };
 
   // CREATE HANDLER
+  // CREATE HANDLER
   const onSubmit = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault();
 
+    // Convert images to strings for the form data
+    const productDataForForm = {
+      ...initialStateData,
+      images: initialStateData.images.map(img =>
+        typeof img === 'string' ? img : URL.createObjectURL(img)
+      ),
+    };
+
     const product = appendDataToForm({
       sellerId: user?._id ?? '',
-      data: initialStateData,
-      productCurrentImages: getProduct.data?.data.images ?? [],
+      data: productDataForForm as InitialState,
+      // Pass the full ProductImage objects
+      productCurrentImages: getProduct.data?.images ?? [],
     });
 
     await updateProduct({
-      productId: getProduct.data?.data?._id || '',
-      //@ts-expect-error
-      product: product,
+      id: params.id,
+      data: product,
     });
   };
-
   //USE-EFFECT--------------------------------------------------------------------------
 
   useEffect(() => {
-    if (getProduct.isLoading || !getProduct.data?.data) return undefined;
-    const product = getProduct.data?.data;
-    const imgData = product?.images.map(imgData => imgData.defaultImg);
+    if (getProduct.isLoading || !getProduct.data) return undefined;
+    const product = getProduct.data;
+    const imgData = product?.images?.map(imgData => imgData.defaultImg) || [];
 
     setInitialStateData(prevS => ({
       ...prevS,
@@ -205,9 +224,10 @@ export default function CreateProduct({ params }: { params: { id: string } }) {
       ),
     }));
 
-    const tags = productTags[product.category];
+    const tags =
+      productTags[product.category as keyof typeof productTags] || [];
     setSelectAbleTags(tags);
-  }, [params.id, getProduct.isLoading, getProduct.data?.data]);
+  }, [params.id, getProduct.isLoading, getProduct.data]);
 
   useEffect(() => {
     if (!isSuccess) return undefined;
@@ -220,27 +240,29 @@ export default function CreateProduct({ params }: { params: { id: string } }) {
     );
 
     setInitialStateData({
-      title: '',
-      category: '',
-      price: 0,
-      discountPrice: 0,
-      discountPercent: 0,
-      productSectionName: ProductSectionName.NewArrivals,
-      offerText: '',
-      sellerId: '',
-      inStock: true,
-      images: [],
-      description: EditorState.createEmpty(),
-      specification: EditorState.createEmpty(),
-      tags: [],
+      ...initialState,
+      images: [] as (string | UploadedFile)[],
     });
     router.replace(PATH_SELLER.products.manage);
   }, [isSuccess, router, dispatch]);
 
   useEffect(() => {
-    if (!isError) return;
-    //@ts-expect-error
-    errorHandler('Update Error', updateError?.data?.message);
+    if (!isError || !updateError) return;
+
+    // Type-safe error handling
+    let errorMessage = 'An error occurred';
+    if (
+      'data' in updateError &&
+      updateError.data &&
+      typeof updateError.data === 'object' &&
+      'message' in updateError.data
+    ) {
+      errorMessage = (updateError.data as { message: string }).message;
+    } else if ('status' in updateError) {
+      errorMessage = `Error ${updateError.status}`;
+    }
+
+    errorHandler('Update Error', errorMessage);
   }, [isError, updateError]);
 
   const displayImageHandler = useCallback(
@@ -252,14 +274,13 @@ export default function CreateProduct({ params }: { params: { id: string } }) {
       if (currentLength >= maximumImgLength)
         return errorHandler('Image', 'Maximum image length is 2');
 
-      const value =
+      const value: (string | UploadedFile)[] =
         initialStateData.images.length > 0 ? initialStateData.images : [];
-      const newFiles = acceptedFiles.map(file =>
+      const newFiles: UploadedFile[] = acceptedFiles.map(file =>
         Object.assign(file, {
           preview: URL.createObjectURL(file),
         })
       );
-      //@ts-expect-error
       setInitialStateData(prevS => ({
         ...prevS,
         images: [...value, ...newFiles],
@@ -269,14 +290,13 @@ export default function CreateProduct({ params }: { params: { id: string } }) {
   );
 
   const removeDisplayImage = (inputFile: File | string) => {
-    const filtered =
-      initialStateData.images &&
-      initialStateData.images?.filter(file => file !== inputFile);
+    const filtered = initialStateData.images?.filter(
+      file => file !== inputFile
+    );
 
-    //@ts-expect-error
     setInitialStateData(prevS => ({
       ...prevS,
-      images: filtered,
+      images: filtered || [],
     }));
   };
 
@@ -285,6 +305,16 @@ export default function CreateProduct({ params }: { params: { id: string } }) {
       ...prevS,
       images: [],
     }));
+
+  // Handle Autocomplete change
+  const handleTagChange = (
+    _event: SyntheticEvent<Element, Event>,
+    value: string | null
+  ) => {
+    if (value) {
+      inputHandler(value, 'createTag');
+    }
+  };
 
   if (getProduct.isLoading) return <LoadingPage />;
   if (getProduct.isError) return router.back();
@@ -508,14 +538,11 @@ export default function CreateProduct({ params }: { params: { id: string } }) {
                 },
               }}
               defaultValue={selectAbleTags[0]}
-              options={selectAbleTags.map(tag => tag)}
+              options={selectAbleTags}
               renderInput={params => (
                 <TextField label="Select Tags" {...params} />
               )}
-              //@ts-expect-error
-              onChange={(_event, value: string) =>
-                inputHandler(value, 'createTag')
-              }
+              onChange={handleTagChange}
             />
           </div>
 
