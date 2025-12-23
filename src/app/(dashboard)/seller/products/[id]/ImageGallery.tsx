@@ -19,8 +19,13 @@ function ImageGallery({ images }: { images: ProductImage[] }): JSX.Element {
   }, [images]);
 
   const onSelectImage = (imageData: ProductImage) => {
-    if (imageData.publicId === image.publicId) return undefined;
+    if (imageData.publicId === image.publicId) return;
     setImage(imageData);
+  };
+
+  // Helper function to get valid image source
+  const getValidSrc = (src?: string): string => {
+    return src || '/images/placeholder.png';
   };
 
   return (
@@ -29,23 +34,23 @@ function ImageGallery({ images }: { images: ProductImage[] }): JSX.Element {
         <Image
           className="rounded-[8px]"
           fill
-          src={image.displayImg}
+          src={getValidSrc(image.displayImg)}
           alt="product"
         />
       </div>
 
       <div className="h-[90px] w-full flex items-center space-x-4 justify-center">
-        {images.map(imageData => (
+        {images.map((imageData, index) => (
           <div
-            key={imageData.publicId}
+            key={imageData.publicId || `image-${index}`}
             onClick={() => onSelectImage(imageData)}
             className="relative cursor-pointer active:scale-95 duration-150 w-[64px] h-[64px] rounded-[8px] bg-primaryLight"
           >
             <Image
               className="rounded-[8px]"
               fill
-              src={imageData.commentImg}
-              alt="product list image"
+              src={getValidSrc(imageData.commentImg)}
+              alt={`product image ${index + 1}`}
             />
           </div>
         ))}
