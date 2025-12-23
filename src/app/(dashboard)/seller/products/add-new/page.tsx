@@ -1,21 +1,31 @@
 'use client';
 
+import Button from '@/components/common/Button';
+import CheckBox from '@/components/common/CheckBox';
+import { InputApiErrorMessage } from '@/components/common/FormikCustomInput';
+import Input from '@/components/common/Input';
+import ReactDraftWysiwyg from '@/components/common/ReactDraftWysiwyg';
+import { Upload } from '@/components/common/Upload';
+import { AlertType, showAlert } from '@/redux/features/alertSlice';
+import { useAppDispatch, useAppSelector } from '@/redux/hooks';
+import { useGetCategoryQuery } from '@/redux/services/categoryApi';
+import { useCreateProductMutation } from '@/redux/services/productApi';
+import { PATH_SELLER } from '@/utils/routes';
+import Autocomplete from '@mui/material/Autocomplete';
+import TextField from '@mui/material/TextField';
+import { useRouter } from 'next/navigation';
 import {
   ChangeEvent,
   FormEvent,
   Suspense,
+  SyntheticEvent,
   useCallback,
   useEffect,
   useState,
 } from 'react';
-import PageTitle from '../../PageTitle';
-import Button from '@/components/common/Button';
 import { AiOutlineClose } from 'react-icons/ai';
-import Input from '@/components/common/Input';
-import { useGetCategoryQuery } from '@/redux/services/categoryApi';
-import Autocomplete from '@mui/material/Autocomplete';
-import TextField from '@mui/material/TextField';
-import CheckBox from '@/components/common/CheckBox';
+import PageTitle from '../../PageTitle';
+import { FieldName, InputHandlerTypes } from '../edit/utils';
 import {
   ProductInitialState,
   appendDataToForm,
@@ -24,15 +34,19 @@ import {
   productSections,
   productTags,
 } from './utils';
-import { useAppDispatch, useAppSelector } from '@/redux/hooks';
-import { useCreateProductMutation } from '@/redux/services/productApi';
-import { InputApiErrorMessage } from '@/components/common/FormikCustomInput';
-import { AlertType, showAlert } from '@/redux/features/alertSlice';
-import { useRouter } from 'next/navigation';
-import { PATH_SELLER } from '@/utils/routes';
-import { FieldName, InputHandlerTypes } from '../edit/utils';
-import ReactDraftWysiwyg from '@/components/common/ReactDraftWysiwyg';
-import { Upload } from '@/components/common/Upload';
+
+// Define local types for uploaded files
+type UploadedFile = File & { preview: string };
+type ImageType = string | UploadedFile;
+
+// Create a type that extends ProductInitialState with proper images type
+interface ExtendedProductInitialState extends Omit<
+  ProductInitialState,
+  'images'
+> {
+  images: ImageType[];
+}
+
 //-----------------------------------------------------------------------
 
 //-----------------------------------------------------------------------
@@ -43,13 +57,15 @@ export default function CreateProduct() {
   const { user } = useAppSelector(state => state.authSlice);
   const [
     createProduct,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    { isLoading, isSuccess, data, isError, error: createError },
+    { isSuccess, data, isError, error: createError }, // Removed isLoading
   ] = useCreateProductMutation();
 
   //PRODUCT STATES-----------------------
   const [initialStateData, setInitialStateData] =
-    useState<ProductInitialState>(initialState);
+    useState<ExtendedProductInitialState>({
+      ...initialState,
+      images: [] as ImageType[], // Initialize with proper type
+    });
   const [selectAbleTags, setSelectAbleTags] = useState<string[]>([]);
 
   const [error, setError] = useState<{ fieldName: string; error: string }>({
@@ -111,7 +127,7 @@ export default function CreateProduct() {
       //
       case 'category':
         if (typeof value !== 'string') return;
-        const tags = productTags[value];
+        const tags = productTags[value as keyof typeof productTags] || [];
         setSelectAbleTags(tags);
         setInitialStateData(prevS => ({
           ...prevS,
@@ -131,6 +147,7 @@ export default function CreateProduct() {
           ...prevS,
           tags: [...prevS.tags, input],
         }));
+        break;
 
       default:
         setInitialStateData(prevS => ({
@@ -154,15 +171,22 @@ export default function CreateProduct() {
   const onSubmit = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault();
 
-    // // NOT ALLOW TO CREATE PRODUCT FOR NOW
+    // NOT ALLOW TO CREATE PRODUCT FOR NOW
     if (1 > 1) return undefined;
 
+    // Convert images to strings for the form data
+    const productDataForForm = {
+      ...initialStateData,
+      images: initialStateData.images.map(img =>
+        typeof img === 'string' ? img : URL.createObjectURL(img)
+      ),
+    };
+
     const product = appendDataToForm({
-      data: initialStateData,
+      data: productDataForForm as ProductInitialState,
       sellerId: user?._id ?? '',
     });
 
-    //@ts-expect-error
     await createProduct(product);
   };
 
@@ -175,14 +199,15 @@ export default function CreateProduct() {
       if (currentLength >= maximumImgLength)
         return errorHandler('Image', 'Maximum image length is 2');
 
-      const value =
+      const value: ImageType[] =
         initialStateData.images.length > 0 ? initialStateData.images : [];
-      const newFiles = acceptedFiles.map(file =>
+
+      const newFiles: UploadedFile[] = acceptedFiles.map(file =>
         Object.assign(file, {
           preview: URL.createObjectURL(file),
         })
       );
-      //@ts-expect-error
+
       setInitialStateData(prevS => ({
         ...prevS,
         images: [...value, ...newFiles],
@@ -213,15 +238,16 @@ export default function CreateProduct() {
   useEffect(() => {
     if (!getCategory.isSuccess && !getCategory?.data?.data) return;
 
-    const firstInitialCategory = getCategory?.data?.data[0].name ?? '';
-    const tags = productTags[firstInitialCategory];
+    const firstInitialCategory = getCategory?.data?.data[0]?.name ?? '';
+    const tags =
+      productTags[firstInitialCategory as keyof typeof productTags] || [];
     setSelectAbleTags(tags);
 
     setInitialStateData(prevS => ({
       ...prevS,
       category: firstInitialCategory,
     }));
-  }, [getCategory.isSuccess, dispatch]);
+  }, [getCategory.isSuccess, getCategory?.data?.data]);
 
   useEffect(() => {
     if (initialStateData.category) return;
@@ -232,22 +258,45 @@ export default function CreateProduct() {
   }, []);
 
   useEffect(() => {
-    if (!isSuccess || !data?.data._id) return undefined;
+    if (!isSuccess || !data?._id) return undefined;
 
     dispatch(
       showAlert({
-        message: 'Your new product has been created congrucutaion',
+        message: 'Your new product has been created successfully',
         type: AlertType.Success,
       })
     );
     router.replace(PATH_SELLER.products.manage);
-  }, [isSuccess, data, dispatch]);
+  }, [isSuccess, data, dispatch, router]);
 
   useEffect(() => {
-    if (!isError) return;
-    //@ts-expect-error
-    errorHandler('Update Error', createError?.data?.message);
+    if (!isError || !createError) return;
+
+    // Type-safe error handling
+    let errorMessage = 'An error occurred';
+    if (
+      'data' in createError &&
+      createError.data &&
+      typeof createError.data === 'object' &&
+      'message' in createError.data
+    ) {
+      errorMessage = (createError.data as { message: string }).message;
+    } else if ('status' in createError) {
+      errorMessage = `Error ${createError.status}`;
+    }
+
+    errorHandler('Update Error', errorMessage);
   }, [isError, createError]);
+
+  // Handle Autocomplete change with proper typing
+  const handleTagChange = (
+    _event: SyntheticEvent<Element, Event>,
+    value: string | null
+  ) => {
+    if (value) {
+      inputHandler(value, 'createTag');
+    }
+  };
 
   return (
     <section className="w-full h-full md:p-5 max-w-[660px] mx-auto">
@@ -468,14 +517,11 @@ export default function CreateProduct() {
                 },
               }}
               defaultValue={selectAbleTags[0]}
-              options={selectAbleTags.map(tag => tag)}
+              options={selectAbleTags}
               renderInput={params => (
                 <TextField label="Select Tags" {...params} />
               )}
-              //@ts-expect-error
-              onChange={(_event, value: string) =>
-                inputHandler(value, 'createTag')
-              }
+              onChange={handleTagChange}
             />
           </div>
 
